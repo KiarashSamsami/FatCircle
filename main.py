@@ -12,4 +12,4 @@ import numpy as np
 a = 1312  
 print(a)
 
-print("this is not good, but is getting better")
+print("parmis is a genius")
