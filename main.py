@@ -9,7 +9,7 @@ import math
 import numpy as np
 
 
-a = 130  
+a = 1300  
 print(a)
 
 print("this is not good")
