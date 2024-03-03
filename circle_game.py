@@ -8,7 +8,7 @@ def get_intersect(seg1_start, seg1_end, wall_vector):
     # Unpack coordinates from tuples
     x1, y1 = seg1_start
     x2, y2 = seg1_end
-    dx, dy = wall_vector
+    dx, dy = wall_vector[0]*600,wall_vector[1]*600
 
     # Calculate vectors for the line segment and wall
     seg_vec = (x2 - x1, y2 - y1)
@@ -67,44 +67,44 @@ class Player:
             if intersection_point:
                 self.x, self.y = intersection_point
                 self.draw(screen)
-                collision_handler(intersection_point, d)
+                collision_handler(intersection_point, d, length)
                 return
 
-    def handle_left_wall_collision(self, intersection_point, d):
+    def handle_left_wall_collision(self, intersection_point,d , length):
         p0 = intersection_point
         V1 = d[0] * left_wall[0] + d[1] * left_wall[1]
         V1 = [left_wall[0] * V1, left_wall[1] * V1]
         V2 = [d[0] - V1[0], d[1] - V1[1]]
         V2 = [-V2[0], -V2[1]]
         dnew = [V1[0] + V2[0], V1[1] + V2[1]]
-        self.x, self.y = dnew[0] + p0[0], dnew[1] + p0[1]
+        self.x, self.y = length*dnew[0] + p0[0], length*dnew[1] + p0[1]
 
-    def handle_right_wall_collision(self,  intersection_point, d):
+    def handle_right_wall_collision(self,  intersection_point, d,length):
         p0 = intersection_point
         V1 = d[0] * right_wall[0] + d[1] * right_wall[1]
         V1 = [right_wall[0] * V1, right_wall[1] * V1]
         V2 = [d[0] - V1[0], d[1] - V1[1]]
         V2 = [-V2[0], -V2[1]]
         dnew = [V1[0] + V2[0], V1[1] + V2[1]]
-        self.x, self.y = dnew[0] + p0[0], dnew[1] + p0[1]
+        self.x, self.y = length*dnew[0] + p0[0], length*dnew[1] + p0[1]
 
-    def handle_top_wall_collision(self,  intersection_point, d):
+    def handle_top_wall_collision(self,  intersection_point, d,length):
         p0 = intersection_point
         V1 = d[0] * top_wall[0] + d[1] * top_wall[1]
         V1 = [top_wall[0] * V1, top_wall[1] * V1]
         V2 = [d[0] - V1[0], d[1] - V1[1]]
         V2 = [-V2[0], -V2[1]]
         dnew = [V1[0] + V2[0], V1[1] + V2[1]]
-        self.x, self.y = dnew[0] + p0[0], dnew[1] + p0[1]
+        self.x, self.y = length*dnew[0] + p0[0], length*dnew[1] + p0[1]
 
-    def handle_bottom_wall_collision(self,  intersection_point, d):
+    def handle_bottom_wall_collision(self,  intersection_point, d,length):
         p0 = intersection_point
         V1 = d[0] * bottom_wall[0] + d[1] * bottom_wall[1]
         V1 = [bottom_wall[0] * V1, bottom_wall[1] * V1]
         V2 = [d[0] - V1[0], d[1] - V1[1]]
         V2 = [-V2[0], -V2[1]]
         dnew = [V1[0] + V2[0], V1[1] + V2[1]]
-        self.x, self.y = dnew[0] + p0[0], dnew[1] + p0[1]
+        self.x, self.y = length*dnew[0] + p0[0], length*dnew[1] + p0[1]
 
 
 pygame.init()
@@ -144,7 +144,7 @@ while running:
 
     pygame.display.flip()
 
-    pygame.time.Clock().tick(10)
+    pygame.time.Clock().tick(1)
 
 pygame.quit()
 sys.exit()
