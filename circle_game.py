@@ -49,7 +49,7 @@ class Player:
         if len(self.tet) == 0:
             self.tet.append(0)
 
-        length = random.randint(WIDTH // 100, WIDTH // 20)
+        length = random.randint(WIDTH // 20, WIDTH // 5)
         self.tet.append(random.randint(0, 360) * math.pi / 180)
         d = [math.cos(self.tet[-1]), math.sin(self.tet[-1])]
         p.append((p[-1][0] + length * math.cos(self.tet[-1]), p[-1][1] + length * math.sin(self.tet[-1])))
