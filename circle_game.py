@@ -2,6 +2,7 @@ import pygame
 import sys
 import math
 import random
+import numpy as np
 
 
 
@@ -39,44 +40,16 @@ def get_intersect(seg1_start, seg1_end, seg2_start, seg2_end):
     print(point)
 
     if (
-        min(seg1_start[0], seg1_end[0]) <= point[0] <= max(seg1_start[0], seg1_end[0])
-        and min(seg1_start[1], seg1_end[1]) <= point[1] <= max(seg1_start[1], seg1_end[1])
-        and min(seg2_start[0], seg2_end[0]) <= point[0] <= max(seg2_start[0], seg2_end[0])
-        and min(seg2_start[1], seg2_end[1]) <= point[1] <= max(seg2_start[1], seg2_end[1])
+        min(seg1_start[0], seg1_end[0])-1e-9 <= point[0] <= max(seg1_start[0], seg1_end[0])+1e-9
+        and min(seg1_start[1], seg1_end[1])-1e-9 <= point[1] <= max(seg1_start[1], seg1_end[1])+1e-9
+        and min(seg2_start[0], seg2_end[0])-1e-9 <= point[0] <= max(seg2_start[0], seg2_end[0])+1e-9
+        and min(seg2_start[1], seg2_end[1])-1e-9 <= point[1] <= max(seg2_start[1], seg2_end[1])+1e-9
     ):
         return point
     else:
         return []
         
 
-# def get_intersect(seg1_start, seg1_end, wall_vector):
-#     # Unpack coordinates from tuples
-#     x1, y1 = seg1_start
-#     x2, y2 = seg1_end
-#     dx, dy = wall_vector[0]*600,wall_vector[1]*600
-
-#     # Calculate vectors for the line segment and wall
-#     seg_vec = (x2 - x1, y2 - y1)
-#     wall_vec = (dx, dy)
-
-#     # Calculate the cross product
-#     cross_product = seg_vec[0] * wall_vec[1] - seg_vec[1] * wall_vec[0]
-
-#     # Check if the line segment and wall are parallel or coincident
-#     if abs(cross_product) < 1e-6:  # Use a small tolerance for floating-point comparisons
-#         return None  # No intersection
-
-#     # Calculate the parameter for the line intersection
-#     t = cross_product / (seg_vec[0] * wall_vec[1] - seg_vec[1] * wall_vec[0])
-
-#     # Check if the intersection point is within the line segment and the wall
-#     if t >= 0 and t <= 1:
-#         # Calculate the intersection point coordinates
-#         x_int = x1 + t * seg_vec[0]
-#         y_int = y1 + t * seg_vec[1]
-#         return x_int, y_int  # Return the intersection point
-#     else:
-#         return None  # No intersection
 
 
 class Player:
@@ -96,20 +69,6 @@ class Player:
     def player_move(self, p):
         if len(self.tet) == 0:
             self.tet.append(0)
-
-        length = random.randint(WIDTH // 20, WIDTH // 10)
-        self.tet.append(random.randint(-30, 30) * math.pi / 180)
-        # self.tet.append(0)
-        if len(p)*len(p[0])>2:
-            d = [math.cos(self.tet_dir), math.sin(self.tet_dir)]
-            d = [math.cos(self.tet[-1])*d[0]-math.sin(self.tet[-1])*d[1],math.sin(self.tet[-1])*d[0]+math.cos(self.tet[-1])*d[1]]
-            self.tet_dir = math.atan2(d[1],d[0])
-        else:
-            d = [math.cos(self.tet[-1]), math.sin(self.tet[-1])]
-            self.tet_dir = math.atan2(d[1],d[0])
-
-        p_new = (p[-1][0] + length*d[0] , p[-1][1] + length*d[1])
-
         wall_start_coordinates = [
             [0,600,600,0],
             [0,0,600,600]
@@ -124,8 +83,32 @@ class Player:
             [0,1,0,-1]
         ]
 
-        # print(p[-1])
-        # print(p_new)
+        length = random.randint(WIDTH // 20, WIDTH // 10)
+        self.tet.append(random.randint(-30, 30) * math.pi / 180)
+        # self.tet.append(0)
+        if len(p)*len(p[0])>2:
+            if self.lastPwasInters==1:
+                i = self.lastIntersWallInd
+                this_wall_direction = [wall_directions[0][i],wall_directions[1][i]]
+                d = [math.cos(self.tet_dir), math.sin(self.tet_dir)]
+                V1 = d[0] * this_wall_direction[0] + d[1] * this_wall_direction[1]
+                V1 = [this_wall_direction[0] * V1, this_wall_direction[1] * V1]
+                V2 = [d[0] - V1[0], d[1] - V1[1]]
+                V2 = [-V2[0], -V2[1]]
+                d = [V1[0] + V2[0], V1[1] + V2[1]]
+                # p_new = length*dnew[0] + p[-1][0], length*dnew[1] + p[-1][1]
+                # p.append((p_new[0],p_new[1]))
+                self.tet_dir = math.atan2(d[1],d[0])
+            else:
+                d = [math.cos(self.tet_dir), math.sin(self.tet_dir)]
+                d = [math.cos(self.tet[-1])*d[0]-math.sin(self.tet[-1])*d[1],math.sin(self.tet[-1])*d[0]+math.cos(self.tet[-1])*d[1]]
+                self.tet_dir = math.atan2(d[1],d[0])
+        else:
+            d = [math.cos(self.tet[-1]), math.sin(self.tet[-1])]
+            self.tet_dir = math.atan2(d[1],d[0])
+
+        p_new = (p[-1][0] + length*d[0] , p[-1][1] + length*d[1])
+
         intersection_flag = 0 ; 
         for i in range(4):
             print("iteration:",i)
@@ -135,32 +118,25 @@ class Player:
             intersection_point = get_intersect(p[-1],p_new,wall_start,wall_end)
             if intersection_point:
                 print("wow! intersection Point!",intersection_point)
+
                 p_new = intersection_point
+                t = np.linalg.norm([p_new[0]-p[-1][0],p_new[1]-p[-1][1]])
+                t = t-1e-5
+                p_new = (p[-1][0] + t*d[0] , p[-1][1] + t*d[1])
                 p.append((p_new[0],p_new[1]))
                 self.x, self.y = p[-1]
-                this_wall_direction = [wall_directions[0][i],wall_directions[1][i]]
-                #     p0 = intersection_point
-                V1 = d[0] * this_wall_direction[0] + d[1] * this_wall_direction[1]
-                V1 = [this_wall_direction[0] * V1, this_wall_direction[1] * V1]
-                V2 = [d[0] - V1[0], d[1] - V1[1]]
-                V2 = [-V2[0], -V2[1]]
-                dnew = [V1[0] + V2[0], V1[1] + V2[1]]
-                p_new = length*dnew[0] + p[-1][0], length*dnew[1] + p[-1][1]
-                p.append((p_new[0],p_new[1]))
-                self.tet_dir = math.atan2(dnew[1],dnew[0])
                 intersection_flag = 1
+                self.lastPwasInters = 1 
+                self.lastIntersWallInd = i
                 break
 
         if intersection_flag==0:
             p.append((p_new[0],p_new[1]))
-                
-             
+            self.lastPwasInters = 0 
 
-
-        # p.append((p[-1][0] + length * math.cos(self.tet[-1]), p[-1][1] + length * math.sin(self.tet[-1])))
-        print(self.tet_dir)
         self.x, self.y = p[-1]
         self.x0, self.y0 = p[-2]
+        self.trajLength = len(p)
 
     #     wall_collisions = [
     #         (left_wall, self.handle_left_wall_collision),
@@ -230,10 +206,10 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
 player1 = Player(RED, 50, HEIGHT // 2, 20)
-player2 = Player(BLUE, WIDTH - 50, HEIGHT // 2, 20)
+# player2 = Player(BLUE, WIDTH - 50, HEIGHT // 2, 20)
 
 p1 = [(50, HEIGHT // 2)]
-p2 = [(WIDTH - 50, HEIGHT // 2)]
+# p2 = [(WIDTH - 50, HEIGHT // 2)]
 
 running = True
 while running:
@@ -244,10 +220,15 @@ while running:
     screen.fill(BLACK)
 
     player1.player_move(p1)
-    player2.player_move(p2)
+    # player2.player_move(p2)
 
     player1.draw(screen)
-    player2.draw(screen)
+    # player2.draw(screen)
+    if player1.x>600 or player1.x<0 or player1.y>600 or player1.y<0:
+        print(player1.trajLength)
+        pygame.quit()
+        
+
 
     pygame.display.flip()
 
