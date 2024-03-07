@@ -4,7 +4,7 @@ import math
 import random
 import numpy as np
 
-
+# Test today
 
 def get_intersect(seg1_start, seg1_end, seg2_start, seg2_end):
 
