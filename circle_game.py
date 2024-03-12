@@ -136,24 +136,18 @@ class Player:
         self.x0, self.y0 = p[-2]
         self.trajLength = len(p)
 
-    def eat(self, p):
-        food_pos_tot = []
-        for i in range(40):
-            for j in range(40):
-                food_pos = (50 + (i * 500 / 40), 50 + (j * 500 / 40))
-                food_pos_tot.append((food_pos[0], food_pos[1]))
-
-        print("salam, len food is: ", len(food_pos_tot))
+    def eat(self, p, food_pos_tot, food_pos_tot_flag, totalEatenIndices):
+        print(" len food is: ", len(food_pos_tot))
         eatenIndices = []
         for i in range(len(food_pos_tot)):
             dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
             if dist < 20:
                 eatenIndices.append(i)
-                self.food_pos_tot_flag[i] = -1
-        self.totalEatenIndices.append(eatenIndices)
-
+                food_pos_tot_flag[i] = -1
+        totalEatenIndices.append(eatenIndices)
+        
         for i in range(len(food_pos_tot)):
-            if self.food_pos_tot_flag[i] == 1:
+            if food_pos_tot_flag[i] == 1:
                 pygame.draw.circle(screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
 
 
@@ -173,6 +167,14 @@ player2 = Player(BLUE, 550, 300, 20)
 p1 = [(50, 300)]
 p2 = [(550, 300)]
 
+food_pos_tot = []
+food_pos_tot_flag = [1]*1600
+totalEatenIndices = []
+for i in range(40):
+    for j in range(40):
+        food_pos = (50 + (i * 500 / 40), 50 + (j * 500 / 40))
+        food_pos_tot.append((food_pos[0], food_pos[1]))
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -184,8 +186,8 @@ while running:
     player1.player_move(p1)
     player2.player_move(p2)
 
-    player1.eat(p1)
-    player1.eat(p2)
+    player1.eat(p1, food_pos_tot, food_pos_tot_flag, totalEatenIndices)
+    player1.eat(p2, food_pos_tot, food_pos_tot_flag, totalEatenIndices)
 
     player1.draw(screen)
     player2.draw(screen)
