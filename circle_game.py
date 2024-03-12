@@ -54,17 +54,19 @@ class Player:
         self.tet_dir = None
         self.lastPwasInters = None
         self.lastIntersWallInd = None
+        self.totalEatenIndices = []
         self.color = color
         self.x = x
         self.y = y
         self.radius = radius
+        self.food_pos_tot_flag = np.full(1600,1)
         self.tet = []
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
         pygame.draw.line(screen, [0, 255, 0], (int(self.x), int(self.y)), (int(self.x0), int(self.y0)), 1)
-        pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 6)
-        pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 4)
+        pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 1)
+        pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 1)
 
     def player_move(self, p):
         wall_start_coordinates = [
@@ -134,19 +136,46 @@ class Player:
         self.x0, self.y0 = p[-2]
         self.trajLength = len(p)
 
+        food_pos_tot = [] 
+        counter = 0
+        for i in range(40):
+            for j in range(40):
+                food_pos = (50 +(i*500/40) , 50 + (j*500/40))
+                food_pos_tot.append((food_pos[0], food_pos[1]))
+                counter = counter+1
+        
 
-class Food:
-    def __init__(self):
-        self.food = []
-        self.color = (255,223,0)
-        for i in range(20):
-            self.x_food = random.randint(50, 550)
-            self.y_food = random.randint(50, 550)
-            self.food.append((self.x_food, self.y_food))
 
-    def draw(self, screen):
-        for x, y in self.food:
-            pygame.draw.circle(screen, self.color, (int(x), int(y)), 8)
+        print("salam, len food is: ",len(food_pos_tot))
+
+        eatenIndices = []; 
+        for i in range(len(food_pos_tot)):
+            dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
+            if dist<20:
+                eatenIndices.append(i)
+                self.food_pos_tot_flag[i] = -1
+        self.totalEatenIndices.append(eatenIndices)
+
+        for i in range(len(food_pos_tot)):
+            if self.food_pos_tot_flag[i]==1:
+                pygame.draw.circle(screen, [0,0,255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)  
+
+
+        
+
+
+# class Food:
+#     def __init__(self):
+#         self.food = []
+#         self.color = (255,223,0)
+#         for i in range(20):
+#             self.x_food = random.randint(50, 550)
+#             self.y_food = random.randint(50, 550)
+#             self.food.append((self.x_food, self.y_food))
+
+#     def draw(self, screen):
+#         for x, y in self.food:
+#             pygame.draw.circle(screen, self.color, (int(x), int(y)), 2)
 
 
 pygame.init()
@@ -160,12 +189,12 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
 player1 = Player(RED, 50, 300, 20)
-player2 = Player(BLUE, 550, 300, 20)
+# player2 = Player(BLUE, 550, 300, 20)
 
 p1 = [(50, 300)]
 p2 = [(550, 300)]
 
-food = Food()
+# food = Food()
 
 
 running = True
@@ -177,25 +206,25 @@ while running:
     screen.fill(BLACK)
 
     player1.player_move(p1)
-    player2.player_move(p2)
+    # player2.player_move(p2)
 
-    food.draw(screen)
+    # food.draw(screen)
 
 
 
     player1.draw(screen)
-    player2.draw(screen)
+    # player2.draw(screen)
 
-    if player2.x > 600 or player2.x < 0 or player2.y > 600 or player2.y < 0:
-        print(player2.trajLength)
-        pygame.quit()
+    # if player2.x > 600 or player2.x < 0 or player2.y > 600 or player2.y < 0:
+    #     print(player2.trajLength)
+    #     pygame.quit()
     if player1.x > 600 or player1.x < 0 or player1.y > 600 or player1.y < 0:
         print(player1.trajLength)
         pygame.quit()
 
     pygame.display.flip()
 
-    pygame.time.Clock().tick(1)
+    pygame.time.Clock().tick(500)
 
 pygame.quit()
 sys.exit()
