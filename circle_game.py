@@ -186,7 +186,7 @@ while running:
     player2.player_move(p2)
 
     player1.eat(p1, food_pos_tot, food_pos_tot_flag)
-    player1.eat(p2, food_pos_tot, food_pos_tot_flag)
+    player2.eat(p2, food_pos_tot, food_pos_tot_flag)
 
     player1.draw(screen)
     player2.draw(screen)
