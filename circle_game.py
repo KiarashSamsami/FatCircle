@@ -59,7 +59,6 @@ class Player:
         self.x = x
         self.y = y
         self.radius = radius
-        self.food_pos_tot_flag = np.full(1600, 1)
         self.tet = []
 
     def draw(self, screen):
@@ -136,7 +135,7 @@ class Player:
         self.x0, self.y0 = p[-2]
         self.trajLength = len(p)
 
-    def eat(self, p, food_pos_tot, food_pos_tot_flag, totalEatenIndices):
+    def eat(self, p, food_pos_tot, food_pos_tot_flag):
         print(" len food is: ", len(food_pos_tot))
         eatenIndices = []
         for i in range(len(food_pos_tot)):
@@ -144,8 +143,8 @@ class Player:
             if dist < 20:
                 eatenIndices.append(i)
                 food_pos_tot_flag[i] = -1
-        totalEatenIndices.append(eatenIndices)
-        
+        self.totalEatenIndices.append(eatenIndices)
+
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
                 pygame.draw.circle(screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
@@ -186,8 +185,8 @@ while running:
     player1.player_move(p1)
     player2.player_move(p2)
 
-    player1.eat(p1, food_pos_tot, food_pos_tot_flag, totalEatenIndices)
-    player1.eat(p2, food_pos_tot, food_pos_tot_flag, totalEatenIndices)
+    player1.eat(p1, food_pos_tot, food_pos_tot_flag)
+    player1.eat(p2, food_pos_tot, food_pos_tot_flag)
 
     player1.draw(screen)
     player2.draw(screen)
