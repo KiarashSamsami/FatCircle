@@ -135,15 +135,43 @@ class Player:
         self.x0, self.y0 = p[-2]
         self.trajLength = len(p)
 
-    def eat(self, p, food_pos_tot, food_pos_tot_flag):
+
+        traj_norm = np.linalg.norm([p[-1][0]-p[-2][0],p[-1][1]-p[-2][1]])
+        traj_hat = [(p[-1][0]-p[-2][0])/traj_norm,(p[-1][1]-p[-2][1])/traj_norm]
+        traj_hat_normal = [-traj_hat[1], traj_hat[0]]
+        traj_rect_1 = [p[-2][0]-traj_hat_normal[0],p[-2][1]-traj_hat_normal[1]]
+        traj_rect_2 = [p[-2][0]+traj_hat_normal[0],p[-2][1]+traj_hat_normal[1]]
+        traj_rect_3 = [p[-1][0]+traj_hat_normal[0],p[-1][1]+traj_hat_normal[1]]
+        traj_rect_4 = [p[-1][0]-traj_hat_normal[0],p[-1][1]-traj_hat_normal[1]]
+        traj_rect_start_coords = [
+            [traj_rect_1[0],traj_rect_2[0],traj_rect_3[0],traj_rect_4[0]],
+            [traj_rect_1[1],traj_rect_2[1],traj_rect_3[1],traj_rect_4[1]]
+        ]
+        traj_rect_end_coords = [
+            [traj_rect_2[0],traj_rect_3[0],traj_rect_4[0],traj_rect_1[0]],
+            [traj_rect_2[1],traj_rect_3[1],traj_rect_4[1],traj_rect_1[1]]
+        ]
+
+    def eat(self, p, food_pos_tot, food_pos_tot_flag, traj_rect_start_coords, traj_rect_end_coords):
         print(" len food is: ", len(food_pos_tot))
         eatenIndices = []
         for i in range(len(food_pos_tot)):
-            dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
-            if dist < 20:
-                eatenIndices.append(i)
-                food_pos_tot_flag[i] = -1
-        self.totalEatenIndices.append(eatenIndices)
+            if food_pos_tot_flag[i] == 1:
+                dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
+                w_number = 0 
+                # Computing winding number:
+                # for k in range(4):
+                #     traj_rect_start = [traj_rect_start_coords[0][k], traj_rect_start_coords[1][k]]
+                #     traj_rect_end = [traj_rect_end_coords[0][k], traj_rect_end_coords[1][k]]
+                #     intersection_point_food = get_intersect([food_pos_tot[i][0],food_pos_tot[i][1]], [food_pos_tot[i][0]+1e4,food_pos_tot[i][1]], traj_rect_start, traj_rect_end)
+                #     if intersection_point_food:
+                #         w_number = w_number+1
+
+
+                if dist < 20 or w_number % 2 != 0:
+                    eatenIndices.append(i)
+                    food_pos_tot_flag[i] = -1
+            self.totalEatenIndices.append(eatenIndices)
 
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
@@ -174,6 +202,15 @@ for i in range(40):
         food_pos = (50 + (i * 500 / 40), 50 + (j * 500 / 40))
         food_pos_tot.append((food_pos[0], food_pos[1]))
 
+
+traj_rect_start_coords = [
+                [0,0,0,0],
+                [0,0,0,0]
+]
+traj_rect_end_coords = [
+                [0,0,0,0],
+                [0,0,0,0]
+]
 running = True
 while running:
     for event in pygame.event.get():
@@ -183,13 +220,13 @@ while running:
     screen.fill(BLACK)
 
     player1.player_move(p1)
-    player2.player_move(p2)
+    # player2.player_move(p2)
 
-    player1.eat(p1, food_pos_tot, food_pos_tot_flag)
-    player2.eat(p2, food_pos_tot, food_pos_tot_flag)
+    player1.eat(p1, food_pos_tot, food_pos_tot_flag, traj_rect_start_coords, traj_rect_end_coords)
+    # player2.eat(p2, food_pos_tot, food_pos_tot_flag)
 
     player1.draw(screen)
-    player2.draw(screen)
+    # player2.draw(screen)
 
     pygame.display.flip()
 
