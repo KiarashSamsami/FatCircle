@@ -53,7 +53,7 @@ def distance_cal(start_x, start_y, end_x, end_y):
 class Player:
     def __init__(self, color, x, y, radius):
         self.angle_to_mouse = None
-        self.tet_dir = self.angle_to_mouse
+        self.new_tet_dir = self.angle_to_mouse
         self.lastPwasInters = None
         self.lastIntersWallInd = None
         self.totalEatenIndices = []
@@ -89,32 +89,34 @@ class Player:
             [0, 1, 0, -1]
         ]
         if self.lastPwasInters:
-            distance_to_wall = distance_cal(self.x, self.y, self.intersection_point[0], self.intersection_point[1])
-            end_point_x = self.intersection_point[0] + WIDTH * math.cos(self.tet_dir)
-            end_point_y = self.intersection_point[1] + HEIGHT * math.sin(self.tet_dir)
-            pygame.draw.line(screen, RED, self.intersection_point, (end_point_x, end_point_y))
-            if distance_to_wall <= self.radius :
+            if distance_cal(self.x, self.y, self.intersection_point[0], self.intersection_point[1]) < 1:
                 self.time_to_bounce = 1
+            end_point_x = self.intersection_point[0] + WIDTH * math.cos(self.new_tet_dir)
+            end_point_y = self.intersection_point[1] + HEIGHT * math.sin(self.new_tet_dir)
+            pygame.draw.line(screen, RED, self.intersection_point, (end_point_x, end_point_y))
         
-        distance = distance_cal(self.x,self.y,self.mouse_pos[0],self.mouse_pos[1])
-        if distance >= self.radius  and not self.time_to_bounce:
-            self.speed = distance/10
+        main_distance = distance_cal(self.x,self.y,self.mouse_pos[0],self.mouse_pos[1])
+        if not self.time_to_bounce:
+            self.speed = main_distance/10
             dx = math.cos(self.angle_to_mouse) * self.speed
             dy = math.sin(self.angle_to_mouse) * self.speed
             self.x += dx
             self.y += dy
-            self.x = max(self.radius, min(WIDTH - self.radius, self.x))
-            self.y = max(self.radius, min(HEIGHT - self.radius, self.y))
-        elif self.time_to_bounce:
-            dx = math.cos(self.tet_dir) * self.speed
-            dy = math.sin(self.tet_dir) * self.speed
+        else:
+            dx = math.cos(self.new_tet_dir) * self.speed
+            dy = math.sin(self.new_tet_dir) * self.speed
             self.x += dx
             self.y += dy
-            self.x = max(self.radius, min(WIDTH - self.radius, self.x))
-            self.y = max(self.radius, min(HEIGHT - self.radius, self.y))
-            distance = distance_cal(self.x,self.y,self.mouse_pos[0],self.mouse_pos[1])
+            self.speed = main_distance/10
+            if self.lastPwasInters:
+                distance = distance_cal(self.x, self.y, self.intersection_point[0],self.intersection_point[1])
+                length2traj = distance_cal(self.intersection_point[0],self.intersection_point[1],end_point_x,end_point_y)
+                if length2traj-distance <= self.radius:
+                    self.time_to_bounce = 0
+                
             if not self.lastPwasInters:
                 self.time_to_bounce = 0
+        
 
         for i in range(4):
             print("iteration:", i)
@@ -135,7 +137,7 @@ class Player:
                     V2 = [d[0] - V1[0], d[1] - V1[1]]
                     V2 = [-V2[0], -V2[1]]
                     d = [V1[0] + V2[0], V1[1] + V2[1]]
-                    self.tet_dir = math.atan2(d[1], d[0])
+                    self.new_tet_dir = math.atan2(d[1], d[0])
 
                 break
             else:
@@ -151,7 +153,6 @@ class Player:
                 eatenIndices.append(k)
                 food_pos_tot_flag[k] = -1
         self.totalEatenIndices.append(eatenIndices)
-
         for k in range(len(food_pos_tot)):
             if food_pos_tot_flag[k] == 1:
                 pygame.draw.circle(screen, [0, 0, 255], (int(food_pos_tot[k][0]), int(food_pos_tot[k][1])), 2)
@@ -200,7 +201,6 @@ while running:
 
     player1.draw(screen)
     # player2.draw(screen)
-
     pygame.display.flip()
 
     pygame.time.Clock().tick(60)
