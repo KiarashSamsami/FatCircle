@@ -4,7 +4,7 @@ import math
 import random
 import numpy as np
 
-
+# Compute the random walk per time-step:
 def get_intersect(seg1_start, seg1_end, seg2_start, seg2_end):
     print("wall is:")
     print(seg2_start, seg2_end)
