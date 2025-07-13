@@ -59,6 +59,7 @@ class Player:
         self.x = x
         self.y = y
         self.radius = radius
+        self.totalDistance = 0
         self.tet = []
 
     def draw(self, screen):
@@ -67,23 +68,15 @@ class Player:
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 1)
 
-    def player_move(self, p):
-        wall_start_coordinates = [
-            [0, 600, 600, 0],
-            [0, 0, 600, 600]
-        ]
-        wall_end_coordinates = [
-            [600, 600, 0, 0],
-            [0, 600, 600, 0]
-        ]
+    def player_move(self, p, ANGLE_MIN, ANGLE_MAX):
 
-        wall_directions = [
-            [1, 0, -1, 0],
-            [0, 1, 0, -1]
-        ]
+        wall_start_coordinates = [WALL_START_X, WALL_START_Y]
+        wall_end_coordinates = [WALL_END_X, WALL_END_Y]
+        wall_directions = [WALL_DIRECTIONS_X, WALL_DIRECTIONS_Y]
 
-        length = random.randint(600 // 20, 600 // 10)
-        self.tet.append(random.randint(-30, 30) * math.pi / 180)
+        length = random.randint(WINDOW_WIDTH // 20, WINDOW_WIDTH // 10)
+        self.totalDistance += length 
+        self.tet.append(random.randint(ANGLE_MIN, ANGLE_MAX) * math.pi / 180)
         if len(p) * len(p[0]) > 2:
             if self.lastPwasInters == 1:
                 i = self.lastIntersWallInd
@@ -135,7 +128,6 @@ class Player:
         self.x0, self.y0 = p[-2]
         self.trajLength = len(p)
 
-
         traj_norm = np.linalg.norm([p[-1][0]-p[-2][0],p[-1][1]-p[-2][1]])
         traj_hat = [(p[-1][0]-p[-2][0])/traj_norm,(p[-1][1]-p[-2][1])/traj_norm]
         traj_hat_normal = [-traj_hat[1], traj_hat[0]]
@@ -154,32 +146,29 @@ class Player:
 
     def eat(self, p, food_pos_tot, food_pos_tot_flag, traj_rect_start_coords, traj_rect_end_coords):
         print(" len food is: ", len(food_pos_tot))
+        foodExists = False
         eatenIndices = []
+        
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
                 dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
-                w_number = 0 
-                # Computing winding number:
-                # for k in range(4):
-                #     traj_rect_start = [traj_rect_start_coords[0][k], traj_rect_start_coords[1][k]]
-                #     traj_rect_end = [traj_rect_end_coords[0][k], traj_rect_end_coords[1][k]]
-                #     intersection_point_food = get_intersect([food_pos_tot[i][0],food_pos_tot[i][1]], [food_pos_tot[i][0]+1e4,food_pos_tot[i][1]], traj_rect_start, traj_rect_end)
-                #     if intersection_point_food:
-                #         w_number = w_number+1
-
-
-                if dist < 20 or w_number % 2 != 0:
+                if dist < self.radius :
                     eatenIndices.append(i)
                     food_pos_tot_flag[i] = -1
-            self.totalEatenIndices.append(eatenIndices)
+        self.totalEatenIndices.append(eatenIndices)
 
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
                 pygame.draw.circle(screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
+                foodExists = True
+        return foodExists
+
 
 
 pygame.init()
+pygame.font.init()
 
+font = pygame.font.SysFont(None, 15) 
 WIDTH, HEIGHT = 620, 620
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Circle Game")
@@ -188,19 +177,43 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-player1 = Player(RED, 50, 300, 20)
-player2 = Player(BLUE, 550, 300, 20)
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 600
+FPS = 60
+player_radius = int(input("radius:"))
+ANGLE_MIN = int(input("Enter minimum angle in degrees (e.g. -30): "))
+ANGLE_MAX = int(input("Enter maximum angle in degrees (e.g. 30): "))
+# ======== Wall Definitions ========
+WALL_START_X = [player_radius, WINDOW_WIDTH, WINDOW_WIDTH, player_radius]
+WALL_START_Y = [player_radius, player_radius, WINDOW_HEIGHT, WINDOW_HEIGHT]
+WALL_END_X = [WINDOW_WIDTH, WINDOW_WIDTH, player_radius, player_radius]
+WALL_END_Y = [player_radius, WINDOW_HEIGHT, WINDOW_HEIGHT, player_radius]
+WALL_DIRECTIONS_X = [1, 0, -1, 0]
+WALL_DIRECTIONS_Y = [0, 1, 0, -1]
 
-p1 = [(50, 300)]
-p2 = [(550, 300)]
+
+p1_start = (WINDOW_HEIGHT//12 , WINDOW_WIDTH//2)
+p1 = [p1_start]
+#p2 = [(550, 300)]
+
+player1 = Player(RED, *p1_start, player_radius)
+#player2 = Player(BLUE, 550, 300, 20)
+
+FOOD_GRID_SIZE = int(input("Enter number of food per row/column (e.g. 40): "))
+FOOD_AREA_MARGIN = 50
+FOOD_AREA_SIZE = WINDOW_WIDTH - 2 * FOOD_AREA_MARGIN
+FOOD_SPACING = FOOD_AREA_SIZE / FOOD_GRID_SIZE
 
 food_pos_tot = []
-food_pos_tot_flag = [1]*1600
+food_pos_tot_flag = [1] * (FOOD_GRID_SIZE ** 2)
 totalEatenIndices = []
-for i in range(40):
-    for j in range(40):
-        food_pos = (50 + (i * 500 / 40), 50 + (j * 500 / 40))
-        food_pos_tot.append((food_pos[0], food_pos[1]))
+
+for i in range(FOOD_GRID_SIZE):
+    for j in range(FOOD_GRID_SIZE):
+        x = FOOD_AREA_MARGIN + (i * FOOD_SPACING)
+        y = FOOD_AREA_MARGIN + (j * FOOD_SPACING)
+        food_pos_tot.append((x, y))
+
 
 
 traj_rect_start_coords = [
@@ -219,18 +232,26 @@ while running:
 
     screen.fill(BLACK)
 
-    player1.player_move(p1)
+    player1.player_move(p1, ANGLE_MIN, ANGLE_MAX)
     # player2.player_move(p2)
 
-    player1.eat(p1, food_pos_tot, food_pos_tot_flag, traj_rect_start_coords, traj_rect_end_coords)
+    foodExists = player1.eat(p1, food_pos_tot, food_pos_tot_flag, traj_rect_start_coords, traj_rect_end_coords)
     # player2.eat(p2, food_pos_tot, food_pos_tot_flag)
 
     player1.draw(screen)
     # player2.draw(screen)
 
+    distance_text = font.render(f"Total Distance: {int(player1.totalDistance)}", True, (255, 255, 255))
+    screen.blit(distance_text, (10, 10))
+
     pygame.display.flip()
 
-    pygame.time.Clock().tick(60)
+    pygame.time.Clock().tick(FPS)
+
+    if not foodExists:
+        print("🎉 All food eaten! Game over.")
+        pygame.quit()
+        running = False
 
 pygame.quit()
 sys.exit()
