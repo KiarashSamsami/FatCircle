@@ -63,6 +63,10 @@ class Player:
         self.totalDistance = 0
         self.tet = []
 
+        self.wall_start_coordinates = [self.game.WALL_START_X, self.game.WALL_START_Y]
+        self.wall_end_coordinates = [self.game.WALL_END_X, self.game.WALL_END_Y]
+        self.wall_directions = [self.game.WALL_DIRECTIONS_X, self.game.WALL_DIRECTIONS_Y]
+
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
         pygame.draw.line(screen, [0, 255, 0], (int(self.x), int(self.y)), (int(self.x0), int(self.y0)), 1)
@@ -71,9 +75,7 @@ class Player:
 
     def player_move(self, p, ANGLE_MIN, ANGLE_MAX):
 
-        wall_start_coordinates = [self.game.WALL_START_X, self.game.WALL_START_Y]
-        wall_end_coordinates = [self.game.WALL_END_X, self.game.WALL_END_Y]
-        wall_directions = [self.game.WALL_DIRECTIONS_X, self.game.WALL_DIRECTIONS_Y]
+
 
         length = random.randint(self.game.WINDOW_WIDTH // 20, self.game.WINDOW_WIDTH // 10)
         self.totalDistance += length 
@@ -81,7 +83,7 @@ class Player:
         if len(p) * len(p[0]) > 2:
             if self.lastPwasInters == 1:
                 i = self.lastIntersWallInd
-                this_wall_direction = [wall_directions[0][i], wall_directions[1][i]]
+                this_wall_direction = [self.wall_directions[0][i], self.wall_directions[1][i]]
                 d = [math.cos(self.tet_dir), math.sin(self.tet_dir)]
                 V1 = d[0] * this_wall_direction[0] + d[1] * this_wall_direction[1]
                 V1 = [this_wall_direction[0] * V1, this_wall_direction[1] * V1]
@@ -103,9 +105,8 @@ class Player:
         intersection_flag = 0
         for i in range(4):
             print("iteration:", i)
-            wall_start = [wall_start_coordinates[0][i], wall_start_coordinates[1][i]]
-            wall_end = [wall_end_coordinates[0][i], wall_end_coordinates[1][i]]
-            print(wall_start, wall_end)
+            wall_start = [self.wall_start_coordinates[0][i], self.wall_start_coordinates[1][i]]
+            wall_end = [self.wall_end_coordinates[0][i], self.wall_end_coordinates[1][i]]
             intersection_point = get_intersect(p[-1], p_new, wall_start, wall_end)
             if intersection_point:
                 print("wow! intersection Point!", intersection_point)
