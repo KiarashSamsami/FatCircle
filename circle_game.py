@@ -10,7 +10,7 @@ from geometry_utils import get_intersect, make_vector_from_tet, rotate_2d_vector
 
 
 class Player:
-    def __init__(self, color, x, y, radius, game):
+    def __init__(self, color, x, y, game):
         self.game = game
         self.y0 = None
         self.x0 = None
@@ -21,7 +21,6 @@ class Player:
         self.color = color
         self.x = x
         self.y = y
-        self.radius = radius
         self.total_run_length = 0
         self.current_tet = 0
 
@@ -31,7 +30,7 @@ class Player:
 
  
     def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.game.player_radius)
         pygame.draw.line(screen, [0, 255, 0], (int(self.x), int(self.y)), (int(self.x0), int(self.y0)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 1)
@@ -107,7 +106,7 @@ class Player:
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
                 dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
-                if dist < self.radius:
+                if dist < self.game.player_radius:
                     eatenIndices.append(i)
                     food_pos_tot_flag[i] = -1
         self.totalEatenIndices.append(eatenIndices)
@@ -151,12 +150,12 @@ class Game:
         self.WALL_DIRECTIONS_Y = [0, 1, 0, -1]
 
 
-    def create_player(self):
+    def create_player(self,game):
         RED = (255, 0, 0)
-        player_radius = int(input("radius:"))
-        p1_start = (input("first X location "), input("first y location"))
-        player1 = Player(RED, *p1_start, player_radius)
-        return player1, [p1_start], player_radius
+        self.player_radius = 15
+        p1_start = (20,20)
+        player1 = Player(RED, *p1_start, game)
+        return player1, p1_start
 
     def create_food(self, 
                     food_grid_num_x: float = 40,
@@ -218,8 +217,8 @@ def main():
     game = Game(player_radius)
     food_pos_tot, food_pos_tot_flag = game.create_food(food_grid_num_x= 40, food_area_offset= 10)
 
-    p1_start = (20, 20)
-    player1 = Player(RED, *p1_start, player_radius, game)
+    
+    player1, p1_start = game.create_player(game)
 
     game.game_loop(player1, p1_start, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
     sys.exit()
