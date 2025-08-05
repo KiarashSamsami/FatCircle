@@ -110,16 +110,17 @@ class Player:
                     eatenIndices.append(i)
                     food_pos_tot_flag[i] = -1
         self.totalEatenIndices.append(eatenIndices)
-
-        for i in range(len(food_pos_tot)):
-            if food_pos_tot_flag[i] == 1:
-                pygame.draw.circle(self.game.screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
-                foodExists = True
-        return foodExists
+        if self.game.gui:
+            for i in range(len(food_pos_tot)):
+                if food_pos_tot_flag[i] == 1:
+                    if self.game.gui:
+                        pygame.draw.circle(self.game.screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
+        return any(flag == 1 for flag in food_pos_tot_flag)
 
 class Game:
     def __init__(self, 
                  player_radius,
+                 gui,
                  domain_length_x: float = 620,
                  domain_length_y: float = 620):
         """
@@ -129,13 +130,18 @@ class Game:
             domain_length_x: Length of domain in the X direction.
             domain_length_y: Length of domain in the Y direction.
         """
-        pygame.init()
-        pygame.font.init()
-        self.font = pygame.font.SysFont(None, 15)
         self.WIDTH, self.HEIGHT = domain_length_x, domain_length_y
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.player_radius = player_radius
-        pygame.display.set_caption("Circle Game")
+        self.gui = gui
+        if self.gui:
+                pygame.init()
+                pygame.font.init()
+                self.font = pygame.font.SysFont(None, 15)
+                self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+                pygame.display.set_caption("Circle Game")
+        else:
+            self.font = None
+            self.screen = None
 
         self.WINDOW_WIDTH = self.WIDTH - self.player_radius
         self.WINDOW_HEIGHT = self.HEIGHT - self.player_radius
@@ -183,27 +189,29 @@ class Game:
         running = True 
         p1=[first_pos]
         while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-            self.screen.fill(BLACK)
+            if self.gui:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                self.screen.fill(BLACK)
 
             player1.player_move(p1, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
-
             foodExists = player1.eat(p1, food_pos_tot, food_pos_tot_flag)
 
-            player1.draw(self.screen)
+            if self.gui:
+                player1.draw(self.screen)
 
-            distance_text = self.font.render(f"Total Distance: {int(player1.total_run_length)}", True, (255, 255, 255))
-            self.screen.blit(distance_text, (10, 10))
+                distance_text = self.font.render(f"Total Distance: {int(player1.total_run_length)}", True, (255, 255, 255))
+                self.screen.blit(distance_text, (10, 10))
 
-            pygame.display.flip()
+                pygame.display.flip()
 
-            pygame.time.Clock().tick(FPS)
+                pygame.time.Clock().tick(FPS)
 
             if not foodExists:
                 print("All food eaten! Game over.")
-                pygame.quit()
+                if self.gui:
+                  pygame.quit()
                 running = False
 
 
@@ -214,13 +222,15 @@ def main():
     run_max = 60
     RED = (255, 0, 0)
     player_radius = 15
-    game = Game(player_radius)
+    
+    game = Game(player_radius, False)
     food_pos_tot, food_pos_tot_flag = game.create_food(food_grid_num_x= 40, food_area_offset= 10)
 
     
     player1, p1_start = game.create_player(game)
 
     game.game_loop(player1, p1_start, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
+    print("total distance: ", player1.total_run_length)
     sys.exit()
 
 
