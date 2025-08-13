@@ -3,7 +3,7 @@ import sys
 import math
 import random
 import numpy as np
-
+from rl_config import get_state, load_q_table, save_q_table, choose_action, ALL_ACTIONS
 from geometry_utils import get_intersect, make_vector_from_tet, rotate_2d_vector
 
 
@@ -55,24 +55,22 @@ class Player:
 
 
     def player_move(self, 
-                    p: list, 
-                    turn_angle_min: float, 
-                    turn_angle_max: float,
-                    run_dist_min: float,
-                    run_dist_max: float):
+                    p: list,
+                    action,):
         """
         Given a starting point, propagates the trajectory of a player given min/max values of turning angles and run lengths and 
         assuming Gaussian distributions for these parameters.
         """
 
         # Obtain new turning angle and run length:
-        self.turning_tet = random.randint(int(turn_angle_min*180/np.pi), int(turn_angle_max*180/np.pi)) * np.pi/180
-        run_length = random.randint(run_dist_min, run_dist_max)
+        #self.turning_tet = random.randint(int(turn_angle_min*180/np.pi), int(turn_angle_max*180/np.pi)) * np.pi/180
+        #run_length = random.randint(run_dist_min, run_dist_max)
+        self.turning_tet, run_length = action
         
         # Obtain new position:
         current_dir = make_vector_from_tet(self.current_tet)
         new_dir = self.obtain_new_dir(current_dir, self.turning_tet)
-        self.current_tet = np.atan2(new_dir[1], new_dir[0]) # Update based on new dir
+        self.current_tet = np.arctan2(new_dir[1], new_dir[0]) # Update based on new dir
         p_new = (p[-1][0] + run_length * new_dir[0], p[-1][1] + run_length * new_dir[1])
         
 
@@ -164,7 +162,7 @@ class Game:
         return player1, p1_start
 
     def create_food(self, 
-                    food_grid_num_x: float = 40,
+                    food_grid_num_x,
                     food_area_offset: float = 10 ):
         """
         Creates a food grid, returns positions of food, and the total food count.
@@ -181,13 +179,20 @@ class Game:
                 food_pos_tot.append((x, y))
         return food_pos_tot, total_food_count
 
-    def game_loop(self, player1, first_pos, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max):
+    def game_loop(self, player1, first_pos, food_pos_tot, food_pos_tot_flag, episode, q_table):
         traj_rect_end_coords = [[0]*4, [0]*4]
         traj_rect_start_coords = [[0]*4, [0]*4]
+
         BLACK = (0, 0, 0)
         FPS = 30
+        grid_size = 10
+        epsilon = 0.1      # Exploration rate
+        gamma = 0.9        # Discount factor
+        alpha = 0.1        # Learning rate
+
         running = True 
         p1=[first_pos]
+
         while running:
             if self.gui:
                 for event in pygame.event.get():
@@ -195,8 +200,25 @@ class Game:
                         running = False
                 self.screen.fill(BLACK)
 
-            player1.player_move(p1, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
+            state = get_state(player1.x, player1.y, self.WIDTH, self.HEIGHT, food_pos_tot_flag, grid_size)
+            action = choose_action(q_table, state, epsilon)
+
+            player1.player_move(p1, action)
             foodExists = player1.eat(p1, food_pos_tot, food_pos_tot_flag)
+            
+            # --- Q-learning Update ---
+            new_state = get_state(player1.x, player1.y, self.WIDTH, self.HEIGHT, food_pos_tot_flag, grid_size)
+            reward = 1 if any(flag == -1 for flag in player1.totalEatenIndices[-1]) else -0.01  # or your reward logic
+
+            # Current Q value
+            old_q = q_table.get((state, action), 0)
+
+            # Estimate of optimal future value
+            future_qs = [q_table.get((new_state, a), 0) for a in ALL_ACTIONS]
+            best_future_q = max(future_qs) if future_qs else 0
+
+            # Q-learning update
+            q_table[(state, action)] = old_q + alpha * (reward + gamma * best_future_q - old_q)
 
             if self.gui:
                 player1.draw(self.screen)
@@ -208,29 +230,32 @@ class Game:
 
                 pygame.time.Clock().tick(FPS)
 
-            if not foodExists:
+            if not foodExists :
                 print("All food eaten! Game over.")
                 if self.gui:
-                  pygame.quit()
+                    pygame.quit()
                 running = False
 
 
 def main():
-    ANGLE_MIN = -30 * np.pi/180
-    ANGLE_MAX = 30 * np.pi/180
-    run_min = 30
-    run_max = 60
     RED = (255, 0, 0)
     player_radius = 15
-    
-    game = Game(player_radius, False)
-    food_pos_tot, food_pos_tot_flag = game.create_food(food_grid_num_x= 40, food_area_offset= 10)
+    episodes = 3
 
+    q_table = load_q_table()
     
-    player1, p1_start = game.create_player(game)
+    for episode in range(episodes):
+        
+        game = Game(player_radius, False)
+        food_pos_tot, food_pos_tot_flag = game.create_food(food_grid_num_x= 40, food_area_offset= 10)
 
-    game.game_loop(player1, p1_start, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
-    print("total distance: ", player1.total_run_length)
+        
+        player1, p1_start = game.create_player(game)
+
+        game.game_loop(player1, p1_start, food_pos_tot, food_pos_tot_flag, episode, q_table)
+        save_q_table(q_table)
+        print("total distance: ", player1.total_run_length)
+
     sys.exit()
 
 
