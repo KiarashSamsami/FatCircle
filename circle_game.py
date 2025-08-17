@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import pygame
 import sys
 import random
@@ -6,30 +8,63 @@ import numpy as np
 from geometry_utils import get_intersect, make_vector_from_tet, rotate_2d_vector
 
 
+class BoxDomain:
+    """
+    A class to define the size of the domain.
+
+    """
+    def __init__(self,
+                 width: float = 1000.0,
+                 height: float = 1000.0,
+                 player_radius: float = 15.0):
+        self.width = width
+        self.height= height
+
+
+        """
+        
+        """
+        invisible_width = width - 15
+        self.WINDOW_HEIGHT = self.height - player_radius
+
+        # Coordinates of the 4 wall corners, (bottom left, bottom right, top right, top left)
+        self.WALL_START_X = [0 + player_radius, width - player_radius, width - player_radius, 0 + player_radius]
+        self.WALL_START_Y = [0 + player_radius, 0 + player_radius, height - player_radius, height - player_radius]
+        self.WALL_END_X = [width - player_radius, width - player_radius,  0 + player_radius, 0 + player_radius]
+        self.WALL_END_Y = [0 + player_radius, height - player_radius, height - player_radius, 0 + player_radius]
+        self.WALL_DIRECTIONS_X = [1, 0, -1, 0]
+        self.WALL_DIRECTIONS_Y = [0, 1, 0, -1]
+        #TODO: make wealls be a dict with normal, start and end points for each wall (FOr future more complicated geometries)
+        # wall_normals = np.array([[1,0], [0, 1], [-1, 0], [0, -1]])
+
+
 
 
 class Player:
-    def __init__(self, color, x, y, game):
-        self.game = game
+    def __init__(self, color, x0, y0, radius, domain: BoxDomain):
+        # self.game = game
         self.y0 = None
         self.x0 = None
+        self.radius = radius
+
         self.trajLength = None
         self.lastPwasInters = None
         self.lastIntersWallInd = None
         self.totalEatenIndices = []
         self.color = color
-        self.x = x
-        self.y = y
+        self.x = x0
+        self.y = y0
         self.total_run_length = 0
         self.current_tet = 0
 
-        self.wall_start_coordinates = [self.game.WALL_START_X, self.game.WALL_START_Y]
-        self.wall_end_coordinates = [self.game.WALL_END_X, self.game.WALL_END_Y]
-        self.wall_directions = [self.game.WALL_DIRECTIONS_X, self.game.WALL_DIRECTIONS_Y]
+
+        self.wall_start_coordinates = [domain.WALL_START_X, domain.WALL_START_Y]
+        self.wall_end_coordinates = [domain.WALL_END_X, domain.WALL_END_Y]
+        self.wall_directions = [domain.WALL_DIRECTIONS_X, domain.WALL_DIRECTIONS_Y]
 
  
     def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.game.player_radius)
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
         pygame.draw.line(screen, [0, 255, 0], (int(self.x), int(self.y)), (int(self.x0), int(self.y0)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 1)
@@ -97,21 +132,22 @@ class Player:
         self.total_run_length += np.linalg.norm([ self.x0 - self.x, self.y0 -self.y]) 
 
 
-    
-    def eat(self, p, food_pos_tot, food_pos_tot_flag):
+
+
+    def eat(self, p, food_pos_tot, food_pos_tot_flag, show_gui: bool = True):
         eatenIndices = []
         
         for i in range(len(food_pos_tot)):
             if food_pos_tot_flag[i] == 1:
                 dist = np.linalg.norm([food_pos_tot[i][0] - p[-1][0], food_pos_tot[i][1] - p[-1][1]])
-                if dist < self.game.player_radius:
+                if dist < self.radius:
                     eatenIndices.append(i)
                     food_pos_tot_flag[i] = -1
         self.totalEatenIndices.append(eatenIndices)
-        if self.game.gui:
+        #TODO: Bring this to the main plotter part of the code
+        if show_gui:
             for i in range(len(food_pos_tot)):
                 if food_pos_tot_flag[i] == 1:
-                    if self.game.gui:
                         pygame.draw.circle(self.game.screen, [0, 0, 255], (int(food_pos_tot[i][0]), int(food_pos_tot[i][1])), 2)
         return any(flag == 1 for flag in food_pos_tot_flag)
 
@@ -128,8 +164,8 @@ class Game:
             domain_length_x: Length of domain in the X direction.
             domain_length_y: Length of domain in the Y direction.
         """
+        #TODO: Get domain length from its own class...
         self.WIDTH, self.HEIGHT = domain_length_x, domain_length_y
-        self.player_radius = player_radius
         self.gui = gui
         if self.gui:
                 pygame.init()
@@ -140,26 +176,6 @@ class Game:
         else:
             self.font = None
             self.screen = None
-
-        self.WINDOW_WIDTH = self.WIDTH - self.player_radius
-        self.WINDOW_HEIGHT = self.HEIGHT - self.player_radius
-        
-
-        # Coordinates of the 4 wall corners, (bottom left, bottom right, top right, top left)
-        self.WALL_START_X = [player_radius, self.WINDOW_WIDTH, self.WINDOW_WIDTH, player_radius]
-        self.WALL_START_Y = [player_radius, player_radius, self.WINDOW_HEIGHT, self.WINDOW_HEIGHT]
-        self.WALL_END_X = [self.WINDOW_WIDTH, self.WINDOW_WIDTH, player_radius, player_radius]
-        self.WALL_END_Y = [player_radius, self.WINDOW_HEIGHT, self.WINDOW_HEIGHT, player_radius]
-        self.WALL_DIRECTIONS_X = [1, 0, -1, 0]
-        self.WALL_DIRECTIONS_Y = [0, 1, 0, -1]
-
-
-    def create_player(self,game):
-        RED = (255, 0, 0)
-        self.player_radius = 15
-        p1_start = (20,20)
-        player1 = Player(RED, *p1_start, game)
-        return player1, p1_start
 
     def create_food(self, 
                     food_grid_num_x: float = 40,
@@ -180,8 +196,6 @@ class Game:
         return food_pos_tot, total_food_count
 
     def game_loop(self, player1, first_pos, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max):
-        traj_rect_end_coords = [[0]*4, [0]*4]
-        traj_rect_start_coords = [[0]*4, [0]*4]
         BLACK = (0, 0, 0)
         FPS = 30
         running = True 
@@ -220,11 +234,16 @@ def main():
     run_max = 60
     player_radius = 15
     
-    game = Game(player_radius, False)
+    game = Game(player_radius, True)
     food_pos_tot, food_pos_tot_flag = game.create_food(food_grid_num_x= 40, food_area_offset= 10)
 
-    
-    player1, p1_start = game.create_player(game)
+
+    p1_start = (20, 20)
+    player1 = Player(color = "red",
+                     x0 = p1_start[0],
+                     y0=p1_start[1],
+                     radius = 15,
+                    domain=BoxDomain())
 
     game.game_loop(player1, p1_start, food_pos_tot, food_pos_tot_flag, ANGLE_MIN, ANGLE_MAX, run_min, run_max)
     print("total distance: ", player1.total_run_length)
