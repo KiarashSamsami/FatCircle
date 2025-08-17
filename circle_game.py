@@ -1,6 +1,5 @@
 import pygame
 import sys
-import math
 import random
 import numpy as np
 
@@ -35,7 +34,7 @@ class Player:
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x), int(self.y)), 1)
         pygame.draw.circle(screen, [0, 255, 0], (int(self.x0), int(self.y0)), 1)
 
-    
+
     def obtain_new_dir(self, current_dir, turning_angle):
 
         
@@ -100,7 +99,6 @@ class Player:
 
     
     def eat(self, p, food_pos_tot, food_pos_tot_flag):
-        foodExists = False
         eatenIndices = []
         
         for i in range(len(food_pos_tot)):
@@ -220,7 +218,6 @@ def main():
     ANGLE_MAX = 30 * np.pi/180
     run_min = 30
     run_max = 60
-    RED = (255, 0, 0)
     player_radius = 15
     
     game = Game(player_radius, False)
