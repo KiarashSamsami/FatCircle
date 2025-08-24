@@ -3,9 +3,9 @@ import pygame
 import sys
 import random
 import numpy as np
-
+import numpy.typing as npt
 from food_manager import FoodManager
-from geometry_utils import get_intersect, make_vector_from_tet, rotate_2d_vector
+from geometry_utils import get_intersect, make_vector_from_tet, rotate_2d_vector, get_total_distance
 
 
 class BoxDomain:
@@ -161,6 +161,7 @@ class Game:
 
         running = True
         food_remains = food_manager.remaining_count > 0
+        simulation_steps: int = 0
         while running and food_remains:
             if self.show_gui:
                 for event in pygame.event.get():
@@ -176,12 +177,14 @@ class Game:
             eaten_now = food_manager.eat_in_swept_region(player1.trajectory[-2], player1.trajectory[-1], player1.radius)
             player1.eaten_count += len(eaten_now)
             food_remains = food_manager.remaining_count > 0
+            simulation_steps += 1
 
             if not food_remains:
                 print("All food eaten! Game over.")
 
-        pygame.quit()
 
+        pygame.quit()
+        return simulation_steps
 
 def main():
 
@@ -198,11 +201,11 @@ def main():
                      run_dist_max = 60.0,
                      domain=domain)
 
-    game.game_loop(player1, food_manager)
+    final_step_count = game.game_loop(player1, food_manager)
 
-    #TODO: write function to compute traj diff and hence total run length:
-    # p1_traj = np.array(player1.trajectory)
-    # traj_dif =
+
+
+    total_distance = get_total_distance(np.array(player1.trajectory))
     sys.exit()
 
 

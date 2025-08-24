@@ -1,5 +1,5 @@
 import numpy as np
-
+import numpy.typing as npt
 
 # Compute the random walk per time-step:
 def get_intersect(seg1_start, seg1_end, seg2_start, seg2_end):
@@ -60,3 +60,8 @@ def rotate_2d_vector(alpha: float,
                     [d[0]*np.cos(alpha) - d[1]*np.sin(alpha), 
                         d[0]*np.sin(alpha) + d[1]*np.cos(alpha)]
                     )
+
+def get_total_distance(a:npt.NDArray) -> float:
+    diff = np.diff(a, axis=0)
+    norms = np.linalg.norm(diff, axis=1)
+    return np.sum(norms)
