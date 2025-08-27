@@ -138,6 +138,8 @@ class Game:
     def __init__(self,
                  domain: BoxDomain,
                  show_gui: bool,
+                 players: list[Player],
+                 food_manager: FoodManager,
                  fps: int = 60,
                  ):
         """
@@ -145,8 +147,10 @@ class Game:
         Args:
 
         """
-        domain_width, domain_height = domain.width, domain.height
         self.show_gui = show_gui
+        self.players = players
+        self.food_manager = food_manager
+        self.food_remains: bool = True
         if self.show_gui:
                 self.fps = fps
                 pygame.init()
@@ -156,33 +160,33 @@ class Game:
                 pygame.display.set_caption("Circle Game")
 
 
-    def game_loop(self, player1: Player, food_manager: FoodManager):
+    def step(self):
 
+        for player in self.players:
+            player.player_move()
+            eaten_now = self.food_manager.eat_in_swept_region(player.trajectory[-2], player.trajectory[-1], player.radius)
+            player.eaten_count += len(eaten_now)
+            self.food_remains = self.food_manager.remaining_count > 0
 
-        running = True
-        food_remains = food_manager.remaining_count > 0
+    def draw_game(self):
+        if self.show_gui:
+            self.screen.fill("black")
+            for player in self.players:
+                player.draw(self.screen)
+            self.food_manager.draw_food(self.screen)
+            pygame.display.flip()
+            pygame.time.Clock().tick(self.fps)
+
+    def game_loop(self):
+
         simulation_steps: int = 0
-        while running and food_remains:
-            if self.show_gui:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                self.screen.fill("black")
-                player1.draw(self.screen)
-                food_manager.draw_food(self.screen)
-                pygame.display.flip()
-                pygame.time.Clock().tick(self.fps)
-
-            player1.player_move()
-            eaten_now = food_manager.eat_in_swept_region(player1.trajectory[-2], player1.trajectory[-1], player1.radius)
-            player1.eaten_count += len(eaten_now)
-            food_remains = food_manager.remaining_count > 0
+        while self.food_remains:
+            self.draw_game()
+            self.step()
             simulation_steps += 1
 
-            if not food_remains:
-                print("All food eaten! Game over.")
 
-
+        print(f"{self.food_manager.remaining_count} out of {len(self.food_manager.food_positions)} remains.")
         pygame.quit()
         return simulation_steps
 
@@ -191,7 +195,6 @@ def main():
     domain = BoxDomain()
     food_manager = FoodManager(width=domain.width)
     food_manager.create_food(grid_size=40, offset=10.0)
-    game = Game(show_gui=True, domain=domain, fps=60)
 
     p1_start = (20, 20)
     player1 = Player(color = "red",
@@ -201,7 +204,12 @@ def main():
                      run_dist_max = 60.0,
                      domain=domain)
 
-    final_step_count = game.game_loop(player1, food_manager)
+
+    game = Game(show_gui=True, domain=domain, fps=60, players=[player1], food_manager=food_manager)
+
+
+
+    final_step_count = game.game_loop()
 
 
 
