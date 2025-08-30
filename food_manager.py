@@ -12,7 +12,7 @@ class FoodManager:
         self.total_food_counts = None
         self.remaining_count = None
 
-    def create_food(self, grid_size: int =40, offset: float = 5.0):
+    def create_food(self, grid_size: int =40, offset: float = 250.0):
         region = self.width - 2 * offset
         spacing = region / grid_size
         coords = [

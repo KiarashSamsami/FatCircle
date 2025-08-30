@@ -68,12 +68,20 @@ class Player:
 
         self.eaten_count = 0
 
-        #TODO: Add invisible wall stuff here: (Seems like working good without?!)
-        self.wall_start_coordinates = [domain.WALL_START_X, domain.WALL_START_Y]
-        self.wall_end_coordinates = [domain.WALL_END_X, domain.WALL_END_Y]
+        start = np.vstack([domain.WALL_START_X, domain.WALL_START_Y]).astype(float)
+        end = np.vstack([domain.WALL_END_X, domain.WALL_END_Y]).astype(float)
+        dirs = np.array([[1, -1, -1, 1],
+                         [1, 1, -1, -1]])
+
+        dirs_end = np.array([[-1, -1, 1, 1],
+                         [1, -1, -1, 1]])
+        start += self.radius * dirs
+        end += self.radius * dirs_end
+
+        self.wall_start_coordinates = start.tolist()
+        self.wall_end_coordinates = end.tolist()
         self.wall_directions = [domain.WALL_DIRECTIONS_X, domain.WALL_DIRECTIONS_Y]
 
- 
     def draw(self, screen):
         current_pos = self.trajectory[-1]
         old_pos = self.trajectory[-2] if len(self.trajectory) > 1 else current_pos
@@ -161,7 +169,6 @@ class Game:
 
 
     def step(self):
-
         for player in self.players:
             player.player_move()
             eaten_now = self.food_manager.eat_in_swept_region(player.trajectory[-2], player.trajectory[-1], player.radius)
@@ -180,9 +187,10 @@ class Game:
     def game_loop(self):
 
         simulation_steps: int = 0
+        self.draw_game()
         while self.food_remains:
-            self.draw_game()
             self.step()
+            self.draw_game()
             simulation_steps += 1
 
 
@@ -194,9 +202,10 @@ def main():
 
     domain = BoxDomain()
     food_manager = FoodManager(width=domain.width)
-    food_manager.create_food(grid_size=40, offset=10.0)
+    food_manager.create_food(grid_size=40, offset=150.0)
 
-    p1_start = (20, 20)
+    #TODO: add condition that starting pos must make sense based on radius and domain size...
+    p1_start = (110, 110)
     player1 = Player(color = "red",
                      start_point=p1_start,
                      radius = 100,
