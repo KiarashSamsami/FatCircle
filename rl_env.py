@@ -43,12 +43,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-try:
-    import gymnasium as gym
-    from gymnasium import spaces
-except ImportError:  # fallback to classic gym if needed
-    import gym  # type: ignore
-    from gym import spaces  # type: ignore
+import gymnasium as gym
+from gymnasium import spaces
 
 
 @dataclass
@@ -60,6 +56,35 @@ class EnvConfig:
     random_start: bool = True
     include_last_turn: bool = True
     include_time_left: bool = True
+
+
+
+class _PygameRenderer:
+    def __init__(self, W, H, fps=60):
+        import pygame
+        pygame.init()
+        self.pygame = pygame
+        self.screen = pygame.display.set_mode((int(W), int(H)))
+        self.clock = pygame.time.Clock()
+        self.fps = fps
+
+    def draw(self, engine):
+        pg = self.pygame
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                return False  # caller may close
+        self.screen.fill("black")
+
+        # draw foods
+        engine.food_manager.draw_food(self.screen)      # uses your existing method
+
+        # draw player
+        engine.player.draw(self.screen)                 # uses your existing method
+
+        pg.display.flip()
+        self.clock.tick(self.fps)
+        return True
+
 
 
 class FatCircleRLEnv(gym.Env):
@@ -86,6 +111,10 @@ class FatCircleRLEnv(gym.Env):
         self.cfg = config
         self.engine = engine
 
+
+        self._viewer = None
+        self._render_fps = 100
+
         # Build observation space shape dynamically based on config
         base_obs_dim = 4 + 4  # pos(2) + heading(2) + wall distances(4)
         extra = int(self.cfg.include_last_turn) + int(self.cfg.include_time_left)
@@ -108,6 +137,21 @@ class FatCircleRLEnv(gym.Env):
         self._t = 0
         self._last_turn = 0.0
         self._rng: Optional[np.random.Generator] = None
+
+    def _ensure_viewer(self):
+        if getattr(self, "_viewer", None) is None:
+            self._viewer = _PygameRenderer(self.engine.W, self.engine.H, self._render_fps)
+
+    def render(self):
+        self._ensure_viewer()
+        keep_open = self._viewer.draw(self.engine)
+        if not keep_open:
+            self.close()
+
+    def close(self):
+        import pygame
+        pygame.quit()
+        self._viewer = None
 
     # ---------------- Gym API ---------------- #
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
@@ -198,11 +242,3 @@ class FatCircleRLEnv(gym.Env):
             vec.append(np.float32(time_left))
 
         return np.asarray(vec, dtype=np.float32)
-
-    # -------------- Rendering stubs -------------- #
-    def render(self):
-        # Intentionally minimal — hook your pygame drawer here if desired.
-        pass
-
-    def close(self):
-        pass

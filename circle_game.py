@@ -36,7 +36,13 @@ class BoxDomain:
         # wall_normals = np.array([[1,0], [0, 1], [-1, 0], [0, -1]])
 
 
+    @property
+    def W(self) -> float:
+        return self.width
 
+    @property
+    def H(self) -> float:
+        return self.height
 
 
 class Player:
@@ -81,6 +87,25 @@ class Player:
         self.wall_start_coordinates = start.tolist()
         self.wall_end_coordinates = end.tolist()
         self.wall_directions = [domain.WALL_DIRECTIONS_X, domain.WALL_DIRECTIONS_Y]
+
+    @property
+    def x(self) -> float:
+        return float(self.trajectory[-1][0])
+
+    @property
+    def y(self) -> float:
+        return float(self.trajectory[-1][1])
+
+    @property
+    def theta(self) -> float:
+        return float(self.current_tet)
+
+    def set_pose(self, x: float, y: float, theta: float) -> None:
+        # reset trajectory to a single point at (x,y) and set heading
+        self.trajectory = [(float(x), float(y))]
+        self.current_tet = float(theta)
+        self.lastPwasInters = False
+        self.lastIntersWallInd = None
 
     def draw(self, screen):
         current_pos = self.trajectory[-1]
@@ -140,7 +165,6 @@ class Player:
 
         # Update trajectory:
         self.trajectory.append(p_new)
-
 
 class Game:
     def __init__(self,
